@@ -1,0 +1,14 @@
+.{
+    .name = "far2l",
+    .version = "0.0.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+    },
+    .dependencies = .{
+        .far2l = .{
+            .url = "git+https://github.com/elfmz/far2l.git#851edd2f226615b1fdc0ce098d39d5f27c247a07",
+            .hash = "12200c50a955a9380f5525cd5dfdfa0c31b0958a6b26b06ef0389414bc84bcdcbe52",
+        },
+    },
+}
