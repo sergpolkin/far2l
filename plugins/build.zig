@@ -96,4 +96,42 @@ pub fn build(b: *Build, options: PluginsBuildOptions) void {
         .install_dir = .{ .custom = "install" },
         .install_subdir = "Plugins/calc/plug",
     });
+
+    const plug_inside = b.addSharedLibrary(.{
+        .name = "inside",
+        .target = target,
+        .optimize = optimize,
+    });
+    plug_inside.addCSourceFiles(.{
+        .dependency = upstream,
+        .files = &.{
+            "inside/src/inside.cpp",
+            "inside/src/Globals.cpp",
+            "inside/src/Commands.cpp",
+            "inside/src/ItemList.cpp",
+            "inside/src/PluginImpl.cpp",
+            "inside/src/Storage.cpp",
+            "inside/src/plain/PluginImplPlain.cpp",
+            "inside/src/elf/Dumper.cpp",
+            "inside/src/elf/PluginImplELF.cpp",
+        },
+        .flags = &.{},
+    });
+    plug_inside.addIncludePath(upstream.path("inside/src"));
+    plug_inside.addIncludePath(upstream.path("inside/plain"));
+    plug_inside.addIncludePath(upstream.path("inside/elf"));
+    plug_inside.addIncludePath(upstream.path("far2l/far2sdk"));
+    plug_inside.addIncludePath(upstream.path("WinPort"));
+    plug_inside.addIncludePath(upstream.path("utils/include"));
+    plug_inside.linkLibrary(utils);
+    plug_inside.linkLibCpp();
+    b.getInstallStep().dependOn(&b.addInstallArtifact(plug_inside, .{
+        .dest_sub_path = "Plugins/inside/plug/inside.far-plug-mb",
+        .dest_dir = .{ .override = .{ .custom = "install" } },
+    }).step);
+    b.installDirectory(.{
+        .source_dir = upstream.path("inside/configs/plug"),
+        .install_dir = .{ .custom = "install" },
+        .install_subdir = "Plugins/inside/plug",
+    });
 }
