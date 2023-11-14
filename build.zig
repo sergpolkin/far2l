@@ -156,6 +156,17 @@ pub fn build(b: *std.Build) void {
 
     // plugins
 
+    const plug_simple = b.addSharedLibrary(.{
+        .name = "simple",
+        .root_source_file = .{ .path = "plugins/simple.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.getInstallStep().dependOn(&b.addInstallArtifact(plug_simple, .{
+        .dest_sub_path = "Plugins/simple/plug/simple.far-plug-wide",
+        .dest_dir = .{ .override = .{ .custom = "install" } },
+    }).step);
+
     const plug_align = b.addSharedLibrary(.{
         .name = "align",
         .target = target,
