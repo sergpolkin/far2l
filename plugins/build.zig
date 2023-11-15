@@ -16,13 +16,24 @@ pub fn build(b: *Build, options: PluginsBuildOptions) void {
     const upstream = options.far2l_upstream;
     const utils = options.far2l_utils;
 
-    const plug_simple = b.addSharedLibrary(.{
-        .name = "simple",
-        .root_source_file = .{ .path = "plugins/simple.zig" },
+    const plug_simple_mb = b.addSharedLibrary(.{
+        .name = "simple-mb",
+        .root_source_file = .{ .path = "plugins/simple-mb.zig" },
         .target = target,
         .optimize = optimize,
     });
-    b.getInstallStep().dependOn(&b.addInstallArtifact(plug_simple, .{
+    b.getInstallStep().dependOn(&b.addInstallArtifact(plug_simple_mb, .{
+        .dest_sub_path = "Plugins/simple/plug/simple.far-plug-mb",
+        .dest_dir = .{ .override = .{ .custom = "install" } },
+    }).step);
+
+    const plug_simple_wide = b.addSharedLibrary(.{
+        .name = "simple-wide",
+        .root_source_file = .{ .path = "plugins/simple-wide.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.getInstallStep().dependOn(&b.addInstallArtifact(plug_simple_wide, .{
         .dest_sub_path = "Plugins/simple/plug/simple.far-plug-wide",
         .dest_dir = .{ .override = .{ .custom = "install" } },
     }).step);
