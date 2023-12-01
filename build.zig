@@ -6,6 +6,9 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const upstream = b.dependency("far2l", .{});
 
+    const ttyx = b.option(bool, "ttyx", "build with TTY X11 extensions (default: true)") orelse true;
+    const usewx = b.option(bool, "usewx", "build with GUI/wxWidgets backend") orelse false;
+
     const utils = b.addStaticLibrary(.{
         .name = "utils",
         .target = target,
@@ -123,37 +126,73 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run FAR2L");
     run_step.dependOn(&run_cmd.step);
 
-    // wx
+    if (ttyx) {
+        const far2l_ttyx = b.addExecutable(.{
+            .name = "far2l_ttyx",
+            .target = target,
+            .optimize = optimize,
+        });
 
-    const gui = b.addSharedLibrary(.{
-        .name = "far2l_gui",
-        .target = target,
-        .optimize = optimize,
-    });
+        far2l_ttyx.addCSourceFiles(.{
+            .dependency = upstream,
+            .files = &.{
+                "WinPort/src/Backend/TTY/TTYX/TTYX.cpp",
+            },
+            .flags = &.{},
+        });
 
-    gui.addCSourceFiles(.{
-        .dependency = upstream,
-        .files = &far2l_gui_src,
-        .flags = &.{},
-    });
+        far2l_ttyx.defineCMacro("TTYXI", null);
 
-    gui.addIncludePath(upstream.path("WinPort"));
-    gui.addIncludePath(upstream.path("WinPort/src"));
-    gui.addIncludePath(upstream.path("WinPort/src/Backend"));
-    gui.addIncludePath(upstream.path("utils/include"));
-    gui.addSystemIncludePath(.{ .path = "/usr/lib64/wx/include/gtk3-unicode-3.2" });
-    gui.addSystemIncludePath(.{ .path = "/usr/include/wx-3.2" });
+        far2l_ttyx.addIncludePath(upstream.path("WinPort"));
+        far2l_ttyx.addIncludePath(upstream.path("utils/include"));
 
-    gui.defineCMacro("_FILE_OFFSET_BITS", "64");
-    gui.defineCMacro("WXUSINGDLL", null);
-    gui.defineCMacro("__WXGTK__", null);
+        far2l_ttyx.rdynamic = true;
+        far2l_ttyx.linkLibrary(utils);
+        far2l_ttyx.linkLibCpp();
+        far2l_ttyx.linkSystemLibrary("X11");
+        far2l_ttyx.linkSystemLibrary("Xext");
+        far2l_ttyx.linkSystemLibrary("Xi");
 
-    gui.linkLibrary(utils);
-    gui.linkLibCpp();
-    gui.linkSystemLibrary("wx_gtk3u_core-3.2");
-    gui.linkSystemLibrary("wx_baseu-3.2");
+        b.getInstallStep().dependOn(&b.addInstallArtifact(far2l_ttyx, .{
+            .dest_sub_path = "far2l_ttyx.broker",
+            .dest_dir = .{ .override = .{ .custom = "install" } },
+        }).step);
+    }
 
-    b.getInstallStep().dependOn(&b.addInstallArtifact(gui, .{ .dest_dir = .{ .override = .{ .custom = "install" } } }).step);
+    if (usewx) {
+        const far2l_gui = b.addSharedLibrary(.{
+            .name = "far2l_gui",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        far2l_gui.addCSourceFiles(.{
+            .dependency = upstream,
+            .files = &far2l_gui_src,
+            .flags = &.{},
+        });
+
+        far2l_gui.addIncludePath(upstream.path("WinPort"));
+        far2l_gui.addIncludePath(upstream.path("WinPort/src"));
+        far2l_gui.addIncludePath(upstream.path("WinPort/src/Backend"));
+        far2l_gui.addIncludePath(upstream.path("utils/include"));
+        far2l_gui.addSystemIncludePath(.{ .path = "/usr/lib64/wx/include/gtk3-unicode-3.2" });
+        far2l_gui.addSystemIncludePath(.{ .path = "/usr/include/wx-3.2" });
+
+        far2l_gui.defineCMacro("_FILE_OFFSET_BITS", "64");
+        far2l_gui.defineCMacro("WXUSINGDLL", null);
+        far2l_gui.defineCMacro("__WXGTK__", null);
+
+        far2l_gui.linkLibrary(utils);
+        far2l_gui.linkLibCpp();
+        far2l_gui.linkSystemLibrary("wx_gtk3u_core-3.2");
+        far2l_gui.linkSystemLibrary("wx_baseu-3.2");
+
+        b.getInstallStep().dependOn(&b.addInstallArtifact(far2l_gui, .{
+            .dest_sub_path = "far2l_gui.so",
+            .dest_dir = .{ .override = .{ .custom = "install" } },
+        }).step);
+    }
 
     plugins.build(b, .{
         .target = target,
